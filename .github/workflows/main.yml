@@ -22,7 +22,7 @@ jobs:
           pip install qrcode[pil]
 
       - name: Run Generator Script
-        run: python generate_singbox_trojan.py
+        run: python reality_collector.py
 
       - name: Commit and Push Changes
         run: |
