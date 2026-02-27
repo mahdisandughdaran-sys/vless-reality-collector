@@ -1,0 +1,26 @@
+[
+  {
+    "name": "🇩🇪 DE-01",
+    "server": "de01.yourdomain.com",
+    "port": 443,
+    "password": "PASSWORD_1",
+    "sni": "www.microsoft.com",
+    "fingerprint": "chrome",
+    "alpn": ["h3", "h2", "http/1.1"],
+    "allow_insecure": false,
+    "ws_path": "/ws?ed=2560",
+    "ws_host": "www.microsoft.com"
+  },
+  {
+    "name": "🇺🇸 US-01",
+    "server": "us01.yourdomain.com",
+    "port": 443,
+    "password": "PASSWORD_2",
+    "sni": "www.apple.com",
+    "fingerprint": "random",
+    "alpn": ["h3", "h2"],
+    "allow_insecure": false,
+    "ws_path": "/trojan",
+    "ws_host": "dl.google.com"
+  }
+]
