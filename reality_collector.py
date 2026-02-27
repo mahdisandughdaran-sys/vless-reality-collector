@@ -2,7 +2,6 @@ import requests
 import base64
 
 def collect_configs():
-    # منابع جدید و تست شده
     sources = [
         "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/base64/reality",
         "https://raw.githubusercontent.com/IranianBackbox/V2ray-Configs/main/All_Configs_Sub.txt",
@@ -10,13 +9,11 @@ def collect_configs():
     ]
     
     configs_list = []
-    
     for url in sources:
         try:
             response = requests.get(url, timeout=15)
             if response.status_code == 200:
                 content = response.text.strip()
-                # بررسی اینکه آیا محتوا Base64 است یا خیر
                 try:
                     decoded = base64.b64decode(content).decode('utf-8')
                     configs_list.extend(decoded.splitlines())
@@ -25,21 +22,30 @@ def collect_configs():
         except:
             continue
 
-    # فیلتر کردن فقط کانفیگ‌های معتبر (vless, vmess, trojan)
-    valid_protocols = ('vless://', 'vmess://', 'trojan://', 'ss://')
-    unique_configs = list(set([c for c in configs_list if c.startswith(valid_protocols)]))
+    # ۱. حذف تکراری‌ها
+    unique_configs = list(set([c for c in configs_list if c.startswith(('vless://', 'vmess://', 'trojan://'))]))
     
-    # اگر لیستی پیدا شد، ذخیره کن
-    if unique_configs:
-        final_text = "\n".join(unique_configs)
+    # ۲. گلچین کردن (اولویت با VLESS و Reality)
+    # ابتدا کانفیگ‌هایی که کلمه reality یا sni دارن رو جدا می‌کنیم چون باکیفیت‌ترن
+    top_configs = [c for c in unique_configs if "reality" in c.lower() or "sni" in c.lower()]
+    
+    # اگر تعداد ریالیتی‌ها کم بود، از بقیه اضافه کن
+    if len(top_configs) < 10:
+        remaining = [c for c in unique_configs if c not in top_configs]
+        top_configs.extend(remaining[:(10 - len(top_configs))])
+    
+    # ۳. نهایی کردن لیست (فقط ۱۰ مورد اول)
+    final_list = top_configs[:10]
+    
+    if final_list:
+        final_text = "\n".join(final_list)
         encoded_base64 = base64.b64encode(final_text.encode('utf-8')).decode('utf-8')
         with open('best_reality_configs.txt', 'w') as f:
             f.write(encoded_base64)
-        print(f"Done! Found {len(unique_configs)} configs.")
+        print(f"Success! 10 best configs saved.")
     else:
-        # اگر چیزی پیدا نشد، یک متن ساده بنویس که فایل کاملاً سفید نباشه
         with open('best_reality_configs.txt', 'w') as f:
-            f.write("No configs found yet. Please wait for next update.")
+            f.write("No configs found.")
         print("No configs found.")
 
 if __name__ == "__main__":
