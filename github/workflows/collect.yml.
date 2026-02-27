@@ -1,0 +1,30 @@
+name: Collect VLESS REALITY Configs
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # هر ۶ ساعت
+  workflow_dispatch:        # دستی هم اجرا کنی
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: pip install requests
+    
+    - name: Run collector
+      run: python reality_collector.py
+      
+    - name: Commit results
+      run: |
+        git config user.name "GitHub Action"
+        git config user.email "action@github.com"
+        git add best_reality_configs.txt
+        git diff --staged --quiet || git commit -m "Update REALITY configs $(date)"
+        git push
