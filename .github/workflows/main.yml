@@ -19,7 +19,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install qrcode[pil]
+          ​pip install qrcode[pil] requests
 
       - name: Run Generator Script
         run: python reality_collector.py
