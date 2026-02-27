@@ -1,0 +1,31 @@
+name: Update Best Reality Configs
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # هر ۶ ساعت
+  workflow_dispatch:        # دستی هم می‌تونی اجرا کنی
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run updater
+        run: python update_configs.py
+
+      - name: Commit and push
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add best_reality_configs.txt
+          git commit -m "Auto-update: بهترین REALITY configs - $(date)" || echo "No changes to commit"
+          git push
