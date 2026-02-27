@@ -1,31 +1,33 @@
-name: Update Best Reality Configs
+name: Generate Superhuman Configs
 
 on:
   schedule:
-    - cron: '0 */6 * * *'   # هر ۶ ساعت
-  workflow_dispatch:        # دستی هم می‌تونی اجرا کنی
+    - cron: '0 */12 * * *' # هر ۱۲ ساعت یکبار اجرا می‌شود
+  workflow_dispatch: # قابلیت اجرای دستی
 
 jobs:
-  update:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: Install dependencies
-        run: pip install requests
+      - name: Install Dependencies
+        run: |
+          pip install qrcode[pil]
 
-      - name: Run updater
-        run: python update_configs.py
+      - name: Run Generator Script
+        run: python generate_singbox_trojan.py
 
-      - name: Commit and push
+      - name: Commit and Push Changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add best_reality_configs.txt
-          git commit -m "Auto-update: بهترین REALITY configs - $(date)" || echo "No changes to commit"
+          git add .
+          git commit -m "Update Configs: $(date -u +'%Y-%m-%d %H:%M:%S') UTC" || exit 0
           git push
