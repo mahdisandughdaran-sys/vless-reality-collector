@@ -1,100 +1,42 @@
 import requests
-import re
-from urllib.parse import urlparse, parse_qs, unquote
-from datetime import datetime
+import base64
+import os
 
-# منابع معتبر VLESS (به‌روزترین collectorها)
-SOURCES = [
-    "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Splitted-By-Protocol/vless.txt",
-    "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/filtered/subs/vless.txt",
-    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vless.txt",
-    "https://raw.githubusercontent.com/iboxz/free-v2ray-collector/main/main/vless.txt",
-    "https://raw.githubusercontent.com/lagzian/SS-Collector/main/reality.txt",  # مخصوص REALITY
-    "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/splitted/vless"
-]
-
-def parse_vless(link):
-    try:
-        if not link.startswith("vless://"):
-            return None
-        
-        # جدا کردن uuid@host:port?params#remark
-        rest = link[8:]
-        if '#' in rest:
-            rest, remark = rest.split('#', 1)
-            remark = unquote(remark)
-        else:
-            remark = "No remark"
-        
-        if '?' in rest:
-            main, query = rest.split('?', 1)
-        else:
-            main, query = rest, ""
-        
-        if '@' in main:
-            uuid, host_port = main.split('@', 1)
-            if ':' in host_port:
-                host, port = host_port.split(':', 1)
-            else:
-                host, port = host_port, "443"
-        else:
-            return None
-        
-        params = parse_qs(query)
-        
-        # همه مقادیر را lowercase برای مقایسه دقیق
-        security = params.get('security', [''])[0].lower()
-        flow = params.get('flow', [''])[0].lower()
-        typ = params.get('type', ['tcp'])[0].lower()
-        port = port.strip()
-        
-        # فیلتر دقیق REALITY + xtls-rprx-vision + پورت 443 + TCP
-        if (security == 'reality'
-            and flow == 'xtls-rprx-vision'
-            and port == '443'
-            and typ in ['', 'tcp']):
-            return link.strip()
-    except:
-        pass
-    return None
-
-all_configs = []
-seen = set()
-
-print("🔍 در حال جمع‌آوری و فیلتر کانفیگ‌های VLESS+REALITY...")
-
-for i, url in enumerate(SOURCES, 1):
-    try:
-        print(f"[{i}/{len(SOURCES)}] در حال بررسی: {url}")
-        resp = requests.get(url, timeout=25)
-        if resp.status_code == 200:
-            count = 0
-            for line in resp.text.splitlines():
-                line = line.strip()
-                if line and line.startswith("vless://") and line not in seen:
-                    cfg = parse_vless(line)
-                    if cfg:
-                        all_configs.append(cfg)
-                        seen.add(cfg)
-                        count += 1
-            print(f"   ✅ {count} کانفیگ معتبر پیدا شد")
-        else:
-            print(f"   ❌ خطا HTTP {resp.status_code}")
-    except Exception as e:
-        print(f"   ❌ خطا: {str(e)[:80]}...")
-
-# محدود به 100 تا بهترین (جدیدترین/فعال)
-all_configs = all_configs[:100]
-
-# ذخیره با شماره‌گذاری
-with open("best_reality_configs.txt", "w", encoding="utf-8") as f:
-    f.write(f"# بهترین کانفیگ‌های VLESS + REALITY + xtls-rprx-vision\n")
-    f.write(f"# جمع‌آوری‌شده در: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-    f.write(f"# تعداد: {len(all_configs)} | پورت ۴۴۳ | TCP | بدون نیاز به روت\n")
-    f.write(f"# مناسب برای: v2rayNG, Hiddify, FoXray, v2rayN\n\n")
+def collect_configs():
+    # لیست منابع (می‌توانی لینک‌های معتبر دیگر را اینجا اضافه کنی)
+    sources = [
+        "https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/base64/reality",
+        "https://raw.githubusercontent.com/WilliamStar007/ClashX-V2Ray-Config/main/All.txt"
+    ]
     
-    for i, cfg in enumerate(all_configs, 1):
-        f.write(f"{i:2d}. {cfg}\n")
+    configs_list = []
+    
+    for url in sources:
+        try:
+            response = requests.get(url, timeout=10)
+            if response.status_code == 200:
+                content = response.text
+                # اگر محتوا از قبل Base64 بود، آن را دیکود می‌کنیم
+                try:
+                    decoded_data = base64.b64decode(content).decode('utf-8')
+                    configs_list.extend(decoded_data.splitlines())
+                except:
+                    configs_list.extend(content.splitlines())
+        except Exception as e:
+            print(f"Error fetching from {url}: {e}")
 
-print(f"\n✅ تمام شد! {len(all_configs)} کانفیگ عالی در best_reality_configs.txt ذخیره شد!")
-print("\n📋 برای استفاده:\n   1. فایل را باز کن\n   2. هر خط را کپی کن\n   3. در v2rayNG: + > Import config from clipboard")
+    # حذف تکراری‌ها و فیلتر کردن فقط پروتکل‌های مورد نظر (مثل vless)
+    unique_configs = list(set([c for c in configs_list if c.startswith('vless://')]))
+    
+    # تبدیل نهایی به Base64 برای سازگاری کامل با v2rayNG
+    final_text = "\n".join(unique_configs)
+    encoded_base64 = base64.b64encode(final_text.encode('utf-8')).decode('utf-8')
+    
+    # ذخیره در فایل
+    with open('best_reality_configs.txt', 'w') as f:
+        f.write(encoded_base64)
+    
+    print(f"Success! {len(unique_configs)} configs collected and encoded.")
+
+if __name__ == "__main__":
+    collect_configs()
